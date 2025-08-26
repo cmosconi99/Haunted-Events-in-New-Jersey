@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>New Jersey Haunted Attractions 2025</title>
+<meta name="description" content="A curated, filterable directory of haunted houses, hayrides, trails and Halloween events across New Jersey for the 2025 season, with map and price filters.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<style>
+  :root {
+    --bg:#0b0b10; --card:#12121a; --accent:#e74c3c; --muted:#9aa0a6; --text:#e6e6e6;
+    --chip:#1f1f2b; --chip-border:#2b2b3a;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:linear-gradient(180deg,#0b0b10,#0f0f16); color:var(--text);}
+  header.hero { padding:40px 20px 24px; text-align:center; background: radial-gradient(800px 300px at 50% 0%, #1b1b28 0%, transparent 70%); }
+  .title { font-size: clamp(28px, 4vw, 44px); font-weight:800; letter-spacing:.5px; margin:0 0 8px; }
+  .subtitle { font-size: clamp(14px,2.2vw,18px); color:var(--muted); margin:0 auto; max-width:900px; }
+  .toolbar { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin:22px auto 0; max-width:1100px; align-items:center; }
+  .toolbar input[type="search"], .toolbar select { background:var(--card); border:1px solid #2a2a38; color:var(--text); padding:12px 14px; border-radius:10px; }
+  .toolbar input[type="search"] { flex:1 1 260px; min-width:240px; }
+  .price { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .price input { width:100px; }
+  .chips { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:10px; }
+  .chip { background:var(--chip); border:1px solid var(--chip-border); color:var(--text); padding:8px 10px; border-radius:999px; font-size:12px; cursor:pointer; user-select:none; }
+  .chip.active { border-color:var(--accent); color:#fff; }
+  .views { display:flex; gap:10px; justify-content:center; margin:16px 0; }
+  .viewbtn { background:#1c1c29; color:#e6e6e6; border:1px solid #2a2a38; padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:700; }
+  .viewbtn.active { background:var(--accent); color:#fff; }
+  .panels { max-width:1200px; margin:0 auto; padding:0 16px 80px; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap:16px; }
+  .card { background:linear-gradient(180deg,#141420,#10101a); border:1px solid #24243a; border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:10px; }
+  .badge { display:inline-block; padding:4px 8px; border-radius:8px; font-size:11px; background:#1d1d2a; border:1px solid #2a2a3a; color:#cfd3dc; margin-right:6px; }
+  .name { font-weight:800; font-size:18px; line-height:1.25; }
+  .meta { color: var(--muted); font-size:13px; }
+  .tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:2px; }
+  .tag { font-size:11px; padding:4px 8px; border:1px solid #2a2a3a; border-radius:999px; background:#161623; color:#cfd3dc; }
+  .dates { font-weight:600; color:#ffccbd; }
+  .cta { display:flex; gap:10px; margin-top:auto; flex-wrap:wrap; }
+  .btn { appearance:none; border:none; background:var(--accent); color:#fff; padding:10px 12px; border-radius:10px; font-weight:700; cursor:pointer; text-decoration:none; text-align:center; }
+  .btn.alt { background:#1c1c29; color:#e6e6e6; border:1px solid #2a2a38; }
+  #map { height: 520px; width:100%; border-radius:16px; border:1px solid #24243a; display:none; }
+  section { margin-top:18px; }
+  h2 { font-size:20px; margin:16px 0 8px; }
+  ul.simple { list-style: none; padding:0; margin:0; display:grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap:10px; }
+  ul.simple li { background:#141420; border:1px solid #24243a; border-radius:12px; padding:10px 12px; }
+  footer { color:var(--muted); text-align:center; padding:30px 16px; border-top:1px solid #1b1b28; }
+  .notice { max-width:1000px; margin:0 auto; font-size:13px; }
+</style>
+</head>
+<body>
+  <header class="hero">
+    <h1 class="title">New Jersey Haunted Attractions · 2025</h1>
+    <p class="subtitle">A curated list of haunted houses, hayrides, trails, and Halloween events across NJ. Filter by region, type, and price — switch to the map — and see what’s open <strong>this weekend</strong>. Always verify dates/times with the venue.</p>
+    <div class="toolbar">
+      <input id="search" type="search" placeholder="Search name or town… (e.g., ‘Jackson’, ‘hayride’, ‘Brighton’)">
+      <select id="region">
+        <option value="">All regions</option>
+        <option>North</option>
+        <option>Central</option>
+        <option>South</option>
+      </select>
+      <div class="price">
+        <label>Price from $</label><input id="minPrice" type="number" min="0" step="1" placeholder="min">
+        <label>to $</label><input id="maxPrice" type="number" min="0" step="1" placeholder="max">
+      </div>
+    </div>
+    <div class="chips" id="typeChips"></div>
+    <div class="views">
+      <button class="viewbtn active" id="listViewBtn">List</button>
+      <button class="viewbtn" id="mapViewBtn">Map</button>
+    </div>
+  </header>
+
+  <div class="panels">
+    <section id="weekend">
+      <h2>🎃 This Weekend</h2>
+      <ul class="simple" id="weekendList"></ul>
+      <div class="meta">Weekend window: Aug 29–Aug 31</div>
+    </section>
+
+    <section id="mapPanel">
+      <div id="map"></div>
+    </section>
+
+    <section id="listPanel">
+      <div class="grid" id="cards"></div>
+    </section>
+  </div>
+
+  <footer>
+    <div class="notice">
+      Last updated: 2025-08-26. Built for personal use; not affiliated with any venue. Dates/hours subject to change — check the official site before you go.
+    </div>
+  </footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+// ---- Config (affiliate hooks) ----
+// If you get affiliate IDs, you can rewrite outbound links here.
+const AFFILIATE = {
+  enabled: false,
+  // examples (fill when you have accounts):
+  // seatgeek: { param: 'aid', value: 'YOUR_ID' },
+  // ticketmaster: { param: 'CAMEFROM', value: 'AFF_ID' },
+};
+
+// ---- Data ----
+const DATA = [
+  {
+    "name": "Fright Fest at Six Flags Great Adventure",
+    "city": "Jackson",
+    "region": "Central",
+    "types": [
+      "Theme Park",
+      "Haunted Houses",
+      "Scare Zones"
+    ],
+    "dates": "Select nights, Sept 12 – Nov 2, 2025",
+    "season_start": "2025-09-12",
+    "season_end": "2025-11-02",
+    "address": "1 Six Flags Blvd, Jackson Township, NJ 08527",
+    "lat": 40.13775,
+    "lng": -74.44246,
+    "website": "https://www.sixflags.com/greatadventure/events",
+    "tickets_note": "Tickets/passes via Six Flags; some haunted mazes may require add-ons.",
+    "price_from": 49,
+    "price_to": 99,
+    "tags": [
+      "Large Park",
+      "Family Options",
+      "Outdoors/Indoors"
+    ]
+  },
+  {
+    "name": "13th Hour Haunted House (Formerly Haunted Scarehouse)",
+    "city": "Wharton",
+    "region": "North",
+    "types": [
+      "Haunted Houses",
+      "Escape Rooms",
+      "Axe Throwing"
+    ],
+    "dates": "Select nights Sept–Nov 2025 (opens Sept 20; also Oct dates)",
+    "season_start": "2025-09-20",
+    "season_end": "2025-11-02",
+    "address": "105 W Dewey Ave Suite 5, Wharton, NJ 07885",
+    "lat": 40.90247,
+    "lng": -74.57878,
+    "website": "https://13thhour.com/",
+    "tickets_note": "Discounted nights listed on their Fall schedule; buy online or at door.",
+    "price_from": 35,
+    "price_to": 60,
+    "tags": [
+      "Indoors"
+    ]
+  },
+  {
+    "name": "Brighton Asylum",
+    "city": "Passaic",
+    "region": "North",
+    "types": [
+      "Haunted Houses",
+      "Escape Rooms"
+    ],
+    "dates": "Re-opens Sept 26, 2025; select nights through Oct 31",
+    "season_start": "2025-09-26",
+    "season_end": "2025-10-31",
+    "address": "2 Brighton Ave, Passaic, NJ 07055",
+    "lat": 40.86286,
+    "lng": -74.11922,
+    "website": "https://brightonasylum.com/",
+    "tickets_note": "Open rain or shine; time slots sell out.",
+    "price_from": 39,
+    "price_to": 75,
+    "tags": [
+      "Indoors"
+    ]
+  },
+  {
+    "name": "Night of Terror at Creamy Acres",
+    "city": "Mullica Hill",
+    "region": "South",
+    "types": [
+      "Haunted Hayride",
+      "Haunted Houses",
+      "Zombie Paintball"
+    ],
+    "dates": "15 nights, late Sept–Nov 1, 2025 (select nights)",
+    "season_start": "2025-09-26",
+    "season_end": "2025-11-01",
+    "address": "448 Lincoln Mill Rd, Mullica Hill, NJ 08062",
+    "lat": 39.71211,
+    "lng": -75.19394,
+    "website": "https://www.nightofterror.com/",
+    "tickets_note": "Paintball and combo tickets available; service fees apply.",
+    "price_from": 40,
+    "price_to": 85,
+    "tags": [
+      "Outdoors"
+    ]
+  },
+  {
+    "name": "Field of Terror",
+    "city": "East Windsor",
+    "region": "Central",
+    "types": [
+      "Haunted Hayride",
+      "Haunted Houses",
+      "Corn Maze",
+      "Paintball"
+    ],
+    "dates": "Select nights late Sept–Oct 2025",
+    "season_start": "2025-09-27",
+    "season_end": "2025-10-31",
+    "address": "831 Windsor-Perrineville Rd, East Windsor, NJ 08520",
+    "lat": 40.20206,
+    "lng": -74.49026,
+    "website": "https://fieldofterror.com/",
+    "tickets_note": "Pricing listed per-attraction and combos; VIP available.",
+    "price_from": 30,
+    "price_to": 75,
+    "tags": [
+      "Outdoors"
+    ]
+  },
+  {
+    "name": "Nightmare at Gravity Hill (Cicconi Farms)",
+    "city": "Jackson",
+    "region": "Central",
+    "types": [
+      "Haunted Trail"
+    ],
+    "dates": "Sept 12–Nov 1, 2025 (select nights)",
+    "season_start": "2025-09-12",
+    "season_end": "2025-11-01",
+    "address": "1005 Farmingdale Rd, Jackson, NJ 08527",
+    "lat": 40.12951,
+    "lng": -74.24657,
+    "website": "https://www.nightmareatgravityhill.com/",
+    "tickets_note": "Cash only at site historically; check site for details.",
+    "price_from": 35,
+    "price_to": 45,
+    "tags": [
+      "Outdoors"
+    ]
+  },
+  {
+    "name": "Oasis Island of Terror",
+    "city": "Robbinsville",
+    "region": "Central",
+    "types": [
+      "Haunted Trail"
+    ],
+    "dates": "Select nights in October 2025",
+    "season_start": "2025-10-01",
+    "season_end": "2025-10-31",
+    "address": "3 Circle Dr, Robbinsville, NJ 08691",
+    "lat": 40.20941,
+    "lng": -74.60684,
+    "website": "https://www.oasisislandofterror.com/",
+    "tickets_note": "Tickets sold on-site only; arrive early.",
+    "price_from": 30,
+    "price_to": 40,
+    "tags": [
+      "Outdoors"
+    ]
+  },
+  {
+    "name": "C. Casola Farms Haunted Attractions",
+    "city": "Marlboro",
+    "region": "Central",
+    "types": [
+      "Haunted Hayride",
+      "Haunted Houses",
+      "Corn Maze"
+    ],
+    "dates": "Fridays & Saturdays, Sept 27 – Nov 2, 2025 (7:00pm start)",
+    "season_start": "2025-09-27",
+    "season_end": "2025-11-02",
+    "address": "131 Route 79 S, Marlboro, NJ 07746",
+    "lat": 40.34536,
+    "lng": -74.25848,
+    "website": "https://www.hauntedcasola.com/",
+    "tickets_note": "Ticket sales begin 6:30pm; attractions run after closing time.",
+    "price_from": 40,
+    "price_to": 70,
+    "tags": [
+      "Outdoors"
+    ]
+  },
+  {
+    "name": "Haunted Red Mill (Red Mill Museum Village)",
+    "city": "Clinton",
+    "region": "Central",
+    "types": [
+      "Scream Park / Historic Grounds"
+    ],
+    "dates": "Fridays & Saturdays, Oct 3 – Oct 25, 2025",
+    "season_start": "2025-10-03",
+    "season_end": "2025-10-25",
+    "address": "56 Main St, Clinton, NJ 08809",
+    "lat": 40.63684,
+    "lng": -74.91475,
+    "website": "https://theredmill.org/haunted-red-mill",
+    "tickets_note": "Major fundraiser; typically not recommended under age 13.",
+    "price_from": 30,
+    "price_to": 55,
+    "tags": [
+      "Outdoors",
+      "Historic"
+    ]
+  },
+  {
+    "name": "Brookdale Haunted Theater",
+    "city": "Lincroft",
+    "region": "Central",
+    "types": [
+      "Theatrical Walkthrough"
+    ],
+    "dates": "Oct 12 – Nov 2, 2025 (select dates)",
+    "season_start": "2025-10-12",
+    "season_end": "2025-11-02",
+    "address": "765 Newman Springs Rd, Lincroft, NJ 07738",
+    "lat": 40.33088,
+    "lng": -74.12835,
+    "website": "https://www.brookdalehauntedtheater.com/tickets",
+    "tickets_note": "Also offers 'Lights On, Scares Off' afternoons for families.",
+    "price_from": 20,
+    "price_to": 30,
+    "tags": [
+      "Indoors",
+      "Family Options"
+    ]
+  },
+  {
+    "name": "Pantophobia: The Wrath of Cyrus (Darlington Lake)",
+    "city": "Mahwah",
+    "region": "North",
+    "types": [
+      "Haunted Trail",
+      "Family Hayride"
+    ],
+    "dates": "Multiple nights from Sept 27, 2025 (timed tickets)",
+    "season_start": "2025-09-27",
+    "season_end": "2025-11-01",
+    "address": "600 Darlington Ave, Mahwah, NJ 07430",
+    "lat": 41.06846,
+    "lng": -74.18971,
+    "website": "https://app2.hauntpay.com/events/pantophobia-haunt-2025",
+    "tickets_note": "Timed-entry tickets; family hayride option available.",
+    "price_from": 25,
+    "price_to": 45,
+    "tags": [
+      "Outdoors",
+      "Family Options"
+    ]
+  },
+  {
+    "name": "Allaire Village: Night of Frights",
+    "city": "Wall Township",
+    "region": "Central",
+    "types": [
+      "Historic Village Night Event"
+    ],
+    "dates": "Oct 10–11, 17–18, 24–25, 2025 (6–9pm)",
+    "season_start": "2025-10-10",
+    "season_end": "2025-10-25",
+    "address": "4265 Atlantic Ave, Wall Township, NJ 07727",
+    "lat": 40.15186,
+    "lng": -74.11817,
+    "website": "https://allairevillage.org/",
+    "tickets_note": "Also hosts All Hallows’ Eve (Oct 26) & Ghost Tours on select Sundays.",
+    "price_from": 10,
+    "price_to": 25,
+    "tags": [
+      "Family Options",
+      "Historic"
+    ]
+  }
+];
+
+// ---- Derived ----
+const TYPE_SET = Array.from(new Set(DATA.flatMap(x => x.types))).sort();
+
+// ---- Elements ----
+const searchEl = document.getElementById('search');
+const regionEl = document.getElementById('region');
+const chipsEl = document.getElementById('typeChips');
+const cardsEl = document.getElementById('cards');
+const minPriceEl = document.getElementById('minPrice');
+const maxPriceEl = document.getElementById('maxPrice');
+const weekendListEl = document.getElementById('weekendList');
+const listBtn = document.getElementById('listViewBtn');
+const mapBtn = document.getElementById('mapViewBtn');
+const mapDiv = document.getElementById('map');
+const listPanel = document.getElementById('listPanel');
+const mapPanel = document.getElementById('mapPanel');
+
+let activeTypes = new Set();
+let map, markersLayer;
+
+// ---- Utils ----
+function openMapsLink(address) {
+  return 'https://www.google.com/maps?q=' + encodeURIComponent(address);
+}
+
+function fmtPrice(a, b) {
+  if (a && b) return `$${a}–$${b} (est.)`;
+  if (a) return `from $${a} (est.)`;
+  return 'See site';
+}
+
+// Optional affiliate rewrite (very simple demo)
+function affixed(url) {
+  if (!AFFILIATE.enabled) return url;
+  try {
+    const u = new URL(url);
+    // example: if (u.host.includes('seatgeek.com') && AFFILIATE.seatgeek) { u.searchParams.set(AFFILIATE.seatgeek.param, AFFILIATE.seatgeek.value); }
+    return u.toString();
+  } catch (e) {
+    return url;
+  }
+}
+
+// ---- Templates ----
+function cardTemplate(item) {
+  const types = item.types.map(t => `<span class="badge">${t}</span>`).join('');
+  const tags = (item.tags||[]).map(t => `<span class="tag">${t}</span>`).join('');
+  const price = fmtPrice(item.price_from, item.price_to);
+  return `
+    <article class="card">
+      <div class="name">${item.name}</div>
+      <div class="meta">${item.city}, NJ · <strong>${item.region}</strong> · 💵 ${price}</div>
+      <div class="dates">🗓️ ${item.dates}</div>
+      <div class="meta">📍 ${item.address}</div>
+      <div>${types}</div>
+      <div class="tags">${tags}</div>
+      <div class="cta">
+        <a class="btn" href="${affixed(item.website)}" target="_blank" rel="noopener">Official Site</a>
+        <a class="btn alt" href="${openMapsLink(item.address)}" target="_blank" rel="noopener">Open in Maps</a>
+      </div>
+    </article>
+  `;
+}
+
+function weekendItemTemplate(item) {
+  return `<li><strong>${item.name}</strong><br><span class="meta">${item.city}, NJ · ${item.types.join(', ')}</span></li>`;
+}
+
+// ---- Filters ----
+function matchesFilters(item) {
+  const q = searchEl.value.trim().toLowerCase();
+  const region = regionEl.value;
+  const minP = parseInt(minPriceEl.value || 0, 10);
+  const maxP = parseInt(maxPriceEl.value || 0, 10);
+
+  if (region && item.region !== region) return false;
+  if (activeTypes.size > 0 && !item.types.some(t => activeTypes.has(t))) return false;
+
+  if (minP && (!item.price_from || item.price_to < minP)) return false;
+  if (maxP && (!item.price_to || item.price_from > maxP)) return false;
+
+  if (!q) return true;
+  const hay = [item.name, item.city, item.region, item.address, item.types.join(' ')].join(' ').toLowerCase();
+  return hay.includes(q);
+}
+
+function inWeekend(item) {
+  // If season overlaps Fri-Sun window, include
+  const start = new Date(item.season_start);
+  const end = new Date(item.season_end);
+  const fri = new Date('2025-08-29');
+  const sun = new Date('2025-08-31');
+  return start <= sun && end >= fri;
+}
+
+// ---- Rendering ----
+function renderList() {
+  const list = DATA.filter(matchesFilters);
+  cardsEl.innerHTML = list.map(cardTemplate).join('');
+  // Update markers
+  if (markersLayer) markersLayer.clearLayers();
+  if (map) {
+    list.forEach(item => addMarker(item));
+  }
+}
+
+function renderWeekend() {
+  const weekendList = DATA.filter(inWeekend);
+  weekendListEl.innerHTML = weekendList.length ? weekendList.map(weekendItemTemplate).join('') : '<li>No events this weekend window.</li>';
+}
+
+function renderChips() {
+  chipsEl.innerHTML = '';
+  TYPE_SET.forEach(t => {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.textContent = t;
+    chip.onclick = () => {
+      if (activeTypes.has(t)) activeTypes.delete(t); else activeTypes.add(t);
+      chip.classList.toggle('active');
+      renderList();
+    };
+    chipsEl.appendChild(chip);
+  });
+}
+
+function ensureMap() {
+  if (map) return;
+  mapDiv.style.display = 'block';
+  map = L.map('map').setView([40.1, -74.5], 8);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+  markersLayer = L.layerGroup().addTo(map);
+  // Initial markers (respect current filters)
+  DATA.filter(matchesFilters).forEach(addMarker);
+}
+
+function addMarker(item) {
+  if (!item.lat || !item.lng) return;
+  const marker = L.marker([item.lat, item.lng]);
+  const price = fmtPrice(item.price_from, item.price_to);
+  const html = `
+    <strong>${item.name}</strong><br>
+    ${item.city}, NJ · ${item.region}<br>
+    💵 ${price}<br>
+    <a href="${affixed(item.website)}" target="_blank" rel="noopener">Official Site</a>
+  `;
+  marker.bindPopup(html);
+  markersLayer.addLayer(marker);
+}
+
+// ---- Events ----
+searchEl.addEventListener('input', renderList);
+regionEl.addEventListener('change', renderList);
+minPriceEl.addEventListener('input', renderList);
+maxPriceEl.addEventListener('input', renderList);
+
+listBtn.addEventListener('click', () => {
+  listBtn.classList.add('active'); mapBtn.classList.remove('active');
+  listPanel.style.display = 'block'; mapDiv.style.display = 'none';
+});
+mapBtn.addEventListener('click', () => {
+  mapBtn.classList.add('active'); listBtn.classList.remove('active');
+  listPanel.style.display = 'none'; ensureMap(); mapDiv.style.display = 'block';
+  setTimeout(()=>{ map.invalidateSize(); }, 200);
+});
+
+// ---- Init ----
+renderChips();
+renderWeekend();
+renderList();
+</script>
+</body>
+</html>
